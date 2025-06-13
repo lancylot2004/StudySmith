@@ -1,0 +1,259 @@
+name: Automated Test Deployment
+
+env:
+  GRADLE_FLAGS: >-
+    --no-daemon
+    --parallel
+    --build-cache
+    --configuration-cache
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '.version'
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  # ─────── STAGE 1: CODE QUALITY ───────
+  style:
+    name: Lint / Style
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write local.properties
+        run: echo "${{ secrets.LOCAL_PROPERTIES }}" > local.properties
+
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Run `detekt`
+        run: ./gradlew detekt $GRADLE_FLAGS
+
+  read-version:
+    name: Read Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump Version File
+        id: bump
+        run: |
+          VERSION_FILE=.version
+          STR=$(cat $VERSION_FILE)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "STR"
+          echo "version=$STR" >> $GITHUB_OUTPUT
+
+  # ─────── STAGE 2: TEST ───────
+  test-android:
+    name: Android Unit Tests
+    needs: [style]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write local.properties
+        run: echo "${{ secrets.LOCAL_PROPERTIES }}" > local.properties
+
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - run: ./gradlew :shared:testDebugUnitTest $GRADLE_FLAGS
+
+  test-ios:
+    name: iOS Unit Tests
+    needs: [style]
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write local.properties
+        run: echo "${{ secrets.LOCAL_PROPERTIES }}" > local.properties
+
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - run: ./gradlew :shared:iosSimulatorArm64Test :shared:iosX64Test $GRADLE_FLAGS
+
+  # ─────── STAGE 4: BUILD ───────
+  build-android:
+    name: Build Android APK
+    needs: [test-android, test-integration, read-version]
+    runs-on: ubuntu-latest
+    env:
+      APP_VERSION: ${{ needs.read-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Decode keystore
+        run: echo "$ANDROID_KEYSTORE" | base64 --decode > ./shared/keystore.jks
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+
+      - name: Write local.properties
+        run: echo "${{ secrets.LOCAL_PROPERTIES }}" > local.properties
+
+      - name: Assemble & Sign APK
+        run: ./gradlew :shared:assembleRelease $GRADLE_FLAGS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: shared/build/outputs/apk/release/shared-release.apk
+
+  build-ios:
+    name: Build iOS IPA
+    needs: [test-ios, test-integration, read-version]
+    runs-on: macos-15
+    env:
+      APP_VERSION: ${{ needs.read-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write local.properties
+        run: echo "${{ secrets.LOCAL_PROPERTIES }}" > local.properties
+
+      - name: Cache Bundler
+        uses: actions/cache@v3
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('Gemfile.lock') }}
+          restore-keys: ${{ runner.os }}-gems
+
+      - name: Cache Kotlin/Native Compiler
+        uses: actions/cache@v3
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-konan-${{ hashFiles('**/*.gradle*', 'gradle.properties') }}
+          restore-keys: ${{ runner.os }}-konan
+
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v3
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: ${{ runner.os }}-spm
+
+      - name: Setup Ruby & Bundler
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3
+          bundler-cache: true
+
+      - name: Select XCode 16.3
+        run: sudo xcode-select -s /Applications/Xcode_16.3.app
+
+      - name: Build IPA via Fastlane
+        uses: maierj/fastlane-action@v3.1.0
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: https://${{ secrets.MATCH_GH_TOKEN }}@github.com/lancylot2004/apple.git
+          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
+        with:
+          lane: release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ./build/deploy.ipa
+
+  # ─────── STAGE 5: PUBLISH ───────
+  upload-testflight:
+    name: Upload IPA to TestFlight
+    needs: [build-ios, read-version, read-version]
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-ipa
+          path: ./build
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3
+          bundler-cache: true
+
+      - name: Decode API Key
+        run: |
+          mkdir -p fastlane
+          echo "${{ secrets.FASTLANE_IOS_JSON }}" | base64 --decode > fastlane/key.json
+
+      - name: Extract MR info
+        id: extract_mr
+        run: |
+          DESC=$(git log -1 --pretty=%B)
+          echo "APP_CHANGELOG<<EOF" >> $GITHUB_ENV
+          echo "$DESC" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Upload to TestFlight
+        uses: maierj/fastlane-action@v3.1.0
+        env:
+          APP_VERSION: ${{ needs.read-version.outputs.version }}
+          APP_CHANGELOG: ${{ env.APP_CHANGELOG }}
+        with:
+          lane: test_deploy
+
+  publish-release:
+    name: Publish Artifacts to GitHub Release
+    needs: [build-ios, build-android, read-version]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: ./release
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-ipa
+          path: ./release
+
+      - name: Extract MR info
+        run: |
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+          echo "$(git log -1 --pretty=%B)" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: v${{ needs.read-version.outputs.version }}
+          tag_name: v${{ needs.read-version.outputs.version }}
+          body: ${{ env.RELEASE_NOTES }}
+          files: ./release/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
