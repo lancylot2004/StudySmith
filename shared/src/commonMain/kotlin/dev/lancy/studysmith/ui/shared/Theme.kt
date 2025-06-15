@@ -1,4 +1,4 @@
-package dev.lancy.drp25.ui.shared
+package dev.lancy.studysmith.ui.shared
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
