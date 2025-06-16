@@ -2,9 +2,7 @@ package dev.lancy.studysmith.utilities
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector2D
-import androidx.compose.animation.core.Spring.StiffnessMediumLow
 import androidx.compose.animation.core.VectorConverter
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +17,7 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.round
+import dev.lancy.studysmith.ui.shared.Animation
 import kotlinx.coroutines.launch
 
 fun Modifier.animatePlacement(): Modifier = composed {
@@ -39,7 +38,7 @@ fun Modifier.animatePlacement(): Modifier = composed {
             ?: Animatable(targetOffset, IntOffset.VectorConverter).also { animatable = it }
         if (anim.targetValue != targetOffset) {
             scope.launch {
-                anim.animateTo(targetOffset, spring(stiffness = StiffnessMediumLow))
+                anim.animateTo(targetOffset, Animation.short())
             }
         }
 
@@ -48,12 +47,6 @@ fun Modifier.animatePlacement(): Modifier = composed {
         animatable?.let { it.value - targetOffset } ?: IntOffset.Zero
     }
 }
-
-fun Modifier.applyIf(
-    condition: Boolean,
-    ifTrue: Modifier.() -> Modifier = { this },
-    ifFalse: Modifier.() -> Modifier = { this },
-): Modifier = composed { if (condition) { ifTrue() } else { ifFalse() } }
 
 @Composable
 internal expect fun getScreenSize(): DpSize

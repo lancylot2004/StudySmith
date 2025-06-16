@@ -1,5 +1,7 @@
 package dev.lancy.studysmith.ui.shared
 
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -19,12 +21,12 @@ object Padding {
 object Size {
     val Small = 23.dp
 
-    val Medium = 30.dp
+    val Medium = 36.dp
 
-    val Large = 40.dp
+    val Large = 48.dp
 }
 
-object RoundedShape {
+object Shape {
     val Small = RoundedCornerShape(10)
 
     val Medium = RoundedCornerShape(33)
@@ -46,7 +48,15 @@ object RoundedPercent {
 
 object Const {
     val HazeStyle
-        @Composable get() = HazeStyle(ColourScheme.background.copy(alpha = 0.5f), Padding.Small, 0.2f)
+        @Composable get() = HazeStyle(ColourScheme.background.copy(alpha = 0.3f), Padding.Small, 0.2f)
+}
+
+object Animation {
+    fun <T> short(): AnimationSpec<T> = tween(50, 0)
+
+    fun <T> delayedShort(): AnimationSpec<T> = tween(100, 50)
+
+    fun <T> delayedMedium(): AnimationSpec<T> = tween(400, 60)
 }
 
 val Typography: Typography

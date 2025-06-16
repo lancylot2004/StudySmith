@@ -1,21 +1,17 @@
 package dev.lancy.studysmith.ui.main
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.FlowRowScope
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,14 +22,12 @@ import androidx.compose.material.Text
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.bumble.appyx.components.spotlight.Spotlight
 import com.bumble.appyx.components.spotlight.SpotlightModel
@@ -48,18 +42,21 @@ import com.bumble.appyx.utils.multiplatform.Parcelize
 import com.composables.icons.lucide.CircleUser
 import com.composables.icons.lucide.Lucide
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 import dev.lancy.studysmith.ui.main.MainNode.MainNav.BuddiesPage
 import dev.lancy.studysmith.ui.main.MainNode.MainNav.MePage
 import dev.lancy.studysmith.ui.main.MainNode.MainNav.PlanPage
 import dev.lancy.studysmith.ui.main.MainNode.MainNav.SessionsPage
 import dev.lancy.studysmith.ui.main.MainNode.MainNav.StatsPage
-import dev.lancy.studysmith.ui.main.MainNode.NavHeight
+import dev.lancy.studysmith.ui.shared.Animation
+import dev.lancy.studysmith.ui.shared.ColourScheme
 import dev.lancy.studysmith.ui.shared.Const
 import dev.lancy.studysmith.ui.shared.NavTarget
 import dev.lancy.studysmith.ui.shared.Padding
 import dev.lancy.studysmith.ui.shared.RoundedPercent
-import dev.lancy.studysmith.ui.shared.RoundedShape
+import dev.lancy.studysmith.ui.shared.Shape
+import dev.lancy.studysmith.ui.shared.Size
 import dev.lancy.studysmith.utilities.ScreenSize
 import dev.lancy.studysmith.utilities.animatePlacement
 
@@ -67,7 +64,7 @@ class MainNode(
     nodeContext: NodeContext,
     private val spotlight: Spotlight<MainNav> = Spotlight(
         model = SpotlightModel(
-            items = listOf(SessionsPage, BuddiesPage, PlanPage, StatsPage, MePage),
+            items = MainNav.entries,
             initialActiveIndex = 0f,
             savedStateMap = nodeContext.savedStateMap,
         ),
@@ -111,6 +108,11 @@ class MainNode(
          * The user's profile and settings are managed here.
          */
         data object MePage : MainNav()
+
+        companion object {
+            val entries: List<MainNav> =
+                listOf(SessionsPage, BuddiesPage, PlanPage, StatsPage, MePage)
+        }
     }
 
     override fun buildChildNode(
@@ -131,22 +133,22 @@ class MainNode(
         Box(modifier) {
             AppyxNavigationContainer(
                 appyxComponent = spotlight,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .haze(hazeState)
+                    .background(ColourScheme.primaryContainer),
             )
 
-            Navigation(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                hazeState = hazeState,
-            )
+            Navigation(hazeState)
         }
     }
 
     private object NavHeight {
-        val ExpandedTop = 45.dp
+        val ExpandedTop = 50.dp
 
         val ExpandedBottom = 70.dp
 
-        val Collapsed = 35.dp
+        val Collapsed = 45.dp
     }
 
     /**
@@ -169,49 +171,29 @@ class MainNode(
      * ╰─    ───╯ ╰─────────────────────────────╯ ╰────╯
      */
     @Composable
-    private fun Navigation(
-        modifier: Modifier = Modifier,
-        hazeState: HazeState,
-    ) {
+    private fun BoxScope.Navigation(hazeState: HazeState) {
         var expanded by remember { mutableStateOf(true) }
 
-        FlowRow(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(Padding.Medium)
-                .animateContentSize()
-                .clickable { expanded = !expanded },
-            horizontalArrangement = Arrangement.spacedBy(Padding.Medium),
-            verticalArrangement = Arrangement.spacedBy(Padding.Medium),
-            itemVerticalAlignment = Alignment.CenterVertically,
-            maxLines = if (expanded) 2 else 1,
-        ) {
-            key("tracker") {
-                if (expanded) { TrackerBar(expanded, hazeState) }
-            }
-
-            MainNav(expanded, hazeState)
-
-            key("tracker") {
-                if (!expanded) { TrackerBar(expanded, hazeState) }
-            }
-
-            MeNav(expanded, hazeState)
-        }
+        TrackerBar(expanded, hazeState) { expanded = !expanded }
+        MainNav(expanded, hazeState)
+        MeNav(expanded, hazeState)
     }
 
     @Composable
-    private fun FlowRowScope.TrackerBar(
+    private fun BoxScope.TrackerBar(
         expanded: Boolean,
         hazeState: HazeState,
+        callback: () -> Unit,
     ) {
         val trackerBarHeight by animateDpAsState(
             if (expanded) NavHeight.ExpandedTop else NavHeight.Collapsed,
+            animationSpec = Animation.delayedShort(),
             label = "TrackerBarHeight",
         )
 
         val trackerBarCornerRadius by animateIntAsState(
             if (expanded) RoundedPercent.LARGE else RoundedPercent.FULL,
+            animationSpec = Animation.delayedShort(),
             label = "TrackerBarCornerRadius",
         )
 
@@ -219,38 +201,58 @@ class MainNode(
             ScreenSize.width -
                 (Padding.Medium * if (expanded) 2 else 4) -
                 (if (expanded) 0.dp else NavHeight.Collapsed * 2),
+            animationSpec = Animation.delayedShort(),
             label = "TrackerBarWidth",
+        )
+
+        val trackerBarPadding by animateDpAsState(
+            // Expanded: Above and below main nav, and main nav itself.
+            if (expanded) Padding.Medium * 2 + NavHeight.ExpandedBottom else Padding.Medium,
+            animationSpec = Animation.delayedShort(),
+            label = "TrackerBarPadding",
         )
 
         Box(
             modifier = Modifier
+                // Align to bottom, then control positioning with padding.
+                .align(Alignment.BottomCenter)
+                .padding(start = Padding.Medium, end = Padding.Medium, bottom = trackerBarPadding)
                 // The width is controlled implicitly by other elements and max row count.
                 .width(trackerBarWidth)
                 .height(trackerBarHeight)
                 .clip(RoundedCornerShape(trackerBarCornerRadius))
                 .animatePlacement()
-                .hazeChild(hazeState, style = Const.HazeStyle)
-                .border(1.dp, Color.Red, RoundedCornerShape(RoundedPercent.LARGE))
-                .background(Color.White),
+                .hazeChild(
+                    state = hazeState,
+                    style = Const.HazeStyle,
+                    shape = RoundedCornerShape(trackerBarCornerRadius),
+                ).clickable { callback() },
         ) {
             Text("Tracker Bar")
         }
     }
 
     @Composable
-    private fun FlowRowScope.MainNav(
+    private fun BoxScope.MainNav(
         expanded: Boolean,
         hazeState: HazeState,
     ) {
         // When the main navigation is collapsed, it will be a single icon, nominally identical to
         // the "Me" icon, which is always present. Hence it is [NavHeight.Collapsed].
         val mainNavWidth by animateDpAsState(
-            if (expanded) ScreenSize.width - (Padding.Medium * 3) - NavHeight.ExpandedBottom else NavHeight.Collapsed,
+            if (expanded) {
+                // Either side, between the main and me navs, and the me nav itself.
+                ScreenSize.width - (Padding.Medium * 3) - NavHeight.ExpandedBottom
+            } else {
+                NavHeight.Collapsed
+            },
+            animationSpec = Animation.delayedShort(),
             label = "MainNavWidth",
         )
 
         val mainNavHeight by animateDpAsState(
             if (expanded) NavHeight.ExpandedBottom else NavHeight.Collapsed,
+            animationSpec = Animation.delayedMedium(),
             label = "MainNavHeight",
         )
 
@@ -259,25 +261,27 @@ class MainNode(
             verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier
+                    // Align to bottom left always - no need to control positioning otherwise.
+                    .align(Alignment.BottomStart)
+                    .padding(start = Padding.Medium, bottom = Padding.Medium)
                     .width(mainNavWidth)
                     .height(mainNavHeight)
-                    .clip(RoundedShape.Full)
+                    .clip(Shape.Full)
                     .animatePlacement()
-                    .hazeChild(hazeState, style = Const.HazeStyle)
-                    .border(1.dp, Color.Magenta, RoundedShape.Full)
-                    .background(Color.White),
+                    .hazeChild(state = hazeState, style = Const.HazeStyle, shape = Shape.Full),
         ) {
             Text("Main Navigation Bar")
         }
     }
 
     @Composable
-    private fun FlowRowScope.MeNav(
+    private fun BoxScope.MeNav(
         expanded: Boolean,
         hazeState: HazeState,
     ) {
         val meNavSize by animateDpAsState(
             if (expanded) NavHeight.ExpandedBottom else NavHeight.Collapsed,
+            animationSpec = Animation.delayedShort(),
             label = "MeNavSize",
         )
 
@@ -285,16 +289,18 @@ class MainNode(
             onClick = {},
             modifier =
                 Modifier
+                    // Align to bottom right always - no need to control positioning otherwise.
+                    .align(Alignment.BottomEnd)
+                    .padding(Padding.Medium)
                     .size(meNavSize)
-                    .clip(RoundedShape.Full)
-                    .hazeChild(hazeState, style = Const.HazeStyle)
-                    .border(1.dp, Color.Green, RoundedShape.Full)
-                    .background(Color.White),
+                    .clip(Shape.Full)
+                    .hazeChild(state = hazeState, style = Const.HazeStyle, shape = Shape.Full),
         ) {
             Icon(
                 imageVector = Lucide.CircleUser,
                 contentDescription = "About Me",
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.size(Size.Medium),
+                tint = ColourScheme.onBackground,
             )
         }
     }
