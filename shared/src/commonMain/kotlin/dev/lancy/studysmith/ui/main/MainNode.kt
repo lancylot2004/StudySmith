@@ -1,5 +1,7 @@
 package dev.lancy.studysmith.ui.main
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateIntAsState
@@ -10,7 +12,9 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -28,9 +32,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.bumble.appyx.components.spotlight.Spotlight
 import com.bumble.appyx.components.spotlight.SpotlightModel
+import com.bumble.appyx.components.spotlight.operation.activate
 import com.bumble.appyx.components.spotlight.ui.fader.SpotlightFader
 import com.bumble.appyx.components.spotlight.ui.slider.SpotlightSlider
 import com.bumble.appyx.navigation.composable.AppyxNavigationContainer
@@ -39,8 +45,12 @@ import com.bumble.appyx.navigation.node.Node
 import com.bumble.appyx.navigation.node.node
 import com.bumble.appyx.utils.multiplatform.Parcelable
 import com.bumble.appyx.utils.multiplatform.Parcelize
+import com.composables.icons.lucide.ChartNoAxesColumn
 import com.composables.icons.lucide.CircleUser
+import com.composables.icons.lucide.ClipboardList
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Play
+import com.composables.icons.lucide.Users
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
@@ -57,8 +67,10 @@ import dev.lancy.studysmith.ui.shared.Padding
 import dev.lancy.studysmith.ui.shared.RoundedPercent
 import dev.lancy.studysmith.ui.shared.Shape
 import dev.lancy.studysmith.ui.shared.Size
+import dev.lancy.studysmith.ui.shared.Typography
 import dev.lancy.studysmith.utilities.ScreenSize
 import dev.lancy.studysmith.utilities.animatePlacement
+import dev.lancy.studysmith.utilities.selectedIndex
 
 class MainNode(
     nodeContext: NodeContext,
@@ -187,13 +199,13 @@ class MainNode(
     ) {
         val trackerBarHeight by animateDpAsState(
             if (expanded) NavHeight.ExpandedTop else NavHeight.Collapsed,
-            animationSpec = Animation.delayedShort(),
+            animationSpec = Animation.medium(),
             label = "TrackerBarHeight",
         )
 
         val trackerBarCornerRadius by animateIntAsState(
             if (expanded) RoundedPercent.LARGE else RoundedPercent.FULL,
-            animationSpec = Animation.delayedShort(),
+            animationSpec = Animation.medium(),
             label = "TrackerBarCornerRadius",
         )
 
@@ -201,14 +213,14 @@ class MainNode(
             ScreenSize.width -
                 (Padding.Medium * if (expanded) 2 else 4) -
                 (if (expanded) 0.dp else NavHeight.Collapsed * 2),
-            animationSpec = Animation.delayedShort(),
+            animationSpec = Animation.medium(),
             label = "TrackerBarWidth",
         )
 
         val trackerBarPadding by animateDpAsState(
             // Expanded: Above and below main nav, and main nav itself.
             if (expanded) Padding.Medium * 2 + NavHeight.ExpandedBottom else Padding.Medium,
-            animationSpec = Animation.delayedShort(),
+            animationSpec = Animation.short(),
             label = "TrackerBarPadding",
         )
 
@@ -233,6 +245,48 @@ class MainNode(
     }
 
     @Composable
+    private fun RowScope.IconTextNavItem(
+        title: String,
+        icon: ImageVector,
+        selected: Boolean,
+        expanded: Boolean,
+        callback: () -> Unit,
+    ) {
+        val colour by animateColorAsState(
+            if (selected) ColourScheme.secondary else ColourScheme.onBackground,
+            animationSpec = Animation.medium(),
+            label = "IconTextNavItemColour",
+        )
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .clickable { callback() },
+            verticalArrangement = Arrangement.spacedBy(Padding.Small),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                modifier = Modifier.size(Size.Small),
+                tint = colour,
+            )
+
+            AnimatedVisibility(expanded) {
+                Text(
+                    text = title,
+                    color = colour,
+                    style = Typography.titleSmall,
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun isSelected(item: MainNav): Boolean =
+        spotlight.selectedIndex() == MainNav.entries.indexOf(item)
+
+    @Composable
     private fun BoxScope.MainNav(
         expanded: Boolean,
         hazeState: HazeState,
@@ -246,13 +300,13 @@ class MainNode(
             } else {
                 NavHeight.Collapsed
             },
-            animationSpec = Animation.delayedShort(),
+            animationSpec = Animation.medium(),
             label = "MainNavWidth",
         )
 
         val mainNavHeight by animateDpAsState(
             if (expanded) NavHeight.ExpandedBottom else NavHeight.Collapsed,
-            animationSpec = Animation.delayedMedium(),
+            animationSpec = Animation.medium(),
             label = "MainNavHeight",
         )
 
@@ -270,7 +324,31 @@ class MainNode(
                     .animatePlacement()
                     .hazeChild(state = hazeState, style = Const.HazeStyle, shape = Shape.Full),
         ) {
-            Text("Main Navigation Bar")
+            // Show also when [MePage] is selected, so that the left nav is never empty.
+            AnimatedVisibility(expanded || isSelected(SessionsPage) || isSelected(MePage)) {
+                IconTextNavItem(
+                    title = "Study",
+                    // TODO: dynamic based on if session is active or not.
+                    icon = Lucide.Play,
+                    selected = isSelected(SessionsPage),
+                    expanded = expanded,
+                ) { spotlight.activate(MainNav.entries.indexOf(SessionsPage).toFloat()) }
+            }
+
+            listOf(
+                Triple("Buddies", Lucide.Users, BuddiesPage),
+                Triple("Plan", Lucide.ClipboardList, PlanPage),
+                Triple("Stats", Lucide.ChartNoAxesColumn, StatsPage),
+            ).forEachIndexed { index, (title, icon, navItem) ->
+                AnimatedVisibility(expanded || isSelected(navItem)) {
+                    IconTextNavItem(
+                        title = title,
+                        icon = icon,
+                        selected = isSelected(navItem),
+                        expanded = expanded,
+                    ) { spotlight.activate(MainNav.entries.indexOf(navItem).toFloat()) }
+                }
+            }
         }
     }
 
@@ -281,12 +359,24 @@ class MainNode(
     ) {
         val meNavSize by animateDpAsState(
             if (expanded) NavHeight.ExpandedBottom else NavHeight.Collapsed,
-            animationSpec = Animation.delayedShort(),
+            animationSpec = Animation.medium(),
             label = "MeNavSize",
         )
 
+        val meIconSize by animateDpAsState(
+            if (expanded) Size.Medium else Size.Small,
+            animationSpec = Animation.medium(),
+            label = "MeIconSize",
+        )
+
+        val meNavColour by animateColorAsState(
+            if (isSelected(MePage)) ColourScheme.secondary else ColourScheme.onBackground,
+            animationSpec = Animation.short(),
+            label = "MeNavColor",
+        )
+
         IconButton(
-            onClick = {},
+            onClick = { spotlight.activate(MainNav.entries.indexOf(MePage).toFloat()) },
             modifier =
                 Modifier
                     // Align to bottom right always - no need to control positioning otherwise.
@@ -299,8 +389,8 @@ class MainNode(
             Icon(
                 imageVector = Lucide.CircleUser,
                 contentDescription = "About Me",
-                modifier = Modifier.size(Size.Medium),
-                tint = ColourScheme.onBackground,
+                modifier = Modifier.size(meIconSize),
+                tint = meNavColour,
             )
         }
     }

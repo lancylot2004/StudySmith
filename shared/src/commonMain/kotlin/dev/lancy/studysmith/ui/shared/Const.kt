@@ -19,7 +19,7 @@ object Padding {
 }
 
 object Size {
-    val Small = 23.dp
+    val Small = 28.dp
 
     val Medium = 36.dp
 
@@ -52,11 +52,9 @@ object Const {
 }
 
 object Animation {
-    fun <T> short(): AnimationSpec<T> = tween(50, 0)
+    fun <T> short(): AnimationSpec<T> = tween(100, 0)
 
-    fun <T> delayedShort(): AnimationSpec<T> = tween(100, 50)
-
-    fun <T> delayedMedium(): AnimationSpec<T> = tween(400, 60)
+    fun <T> medium(): AnimationSpec<T> = tween(300, 0)
 }
 
 val Typography: Typography
