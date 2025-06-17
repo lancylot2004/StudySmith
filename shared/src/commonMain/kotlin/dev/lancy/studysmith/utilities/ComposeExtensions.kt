@@ -15,6 +15,10 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.round
@@ -55,3 +59,23 @@ internal expect fun getScreenSize(): DpSize
 
 val ScreenSize: DpSize
     @Composable get() = getScreenSize()
+
+@Composable
+fun textWidth(
+    text: String,
+    style: TextStyle,
+): Dp {
+    val textMeasurer = rememberTextMeasurer()
+    val widthInPixels = textMeasurer.measure(text, style).size.width
+    return with(LocalDensity.current) { widthInPixels.toDp() }
+}
+
+@Composable
+fun textHeight(
+    text: String,
+    style: TextStyle,
+): Dp {
+    val textMeasurer = rememberTextMeasurer()
+    val heightInPixels = textMeasurer.measure(text, style).size.height
+    return with(LocalDensity.current) { heightInPixels.toDp() }
+}

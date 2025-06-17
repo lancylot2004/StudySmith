@@ -1,30 +1,33 @@
 package dev.lancy.studysmith.ui.main
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
-import androidx.compose.material3.IconButton
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabPosition
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,13 +35,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import com.bumble.appyx.components.spotlight.Spotlight
 import com.bumble.appyx.components.spotlight.SpotlightModel
+import com.bumble.appyx.components.spotlight.SpotlightModel.State
 import com.bumble.appyx.components.spotlight.operation.activate
-import com.bumble.appyx.components.spotlight.ui.fader.SpotlightFader
 import com.bumble.appyx.components.spotlight.ui.slider.SpotlightSlider
+import com.bumble.appyx.interactions.model.Element
+import com.bumble.appyx.interactions.ui.context.UiContext
 import com.bumble.appyx.navigation.composable.AppyxNavigationContainer
 import com.bumble.appyx.navigation.modality.NodeContext
 import com.bumble.appyx.navigation.node.Node
@@ -54,141 +62,118 @@ import com.composables.icons.lucide.Users
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
-import dev.lancy.studysmith.ui.main.MainNode.MainNav.BuddiesPage
-import dev.lancy.studysmith.ui.main.MainNode.MainNav.MePage
-import dev.lancy.studysmith.ui.main.MainNode.MainNav.PlanPage
-import dev.lancy.studysmith.ui.main.MainNode.MainNav.SessionsPage
-import dev.lancy.studysmith.ui.main.MainNode.MainNav.StatsPage
 import dev.lancy.studysmith.ui.shared.Animation
 import dev.lancy.studysmith.ui.shared.ColourScheme
-import dev.lancy.studysmith.ui.shared.Const
+import dev.lancy.studysmith.ui.shared.Haze
 import dev.lancy.studysmith.ui.shared.NavTarget
 import dev.lancy.studysmith.ui.shared.Padding
-import dev.lancy.studysmith.ui.shared.RoundedPercent
-import dev.lancy.studysmith.ui.shared.Shape
+import dev.lancy.studysmith.ui.shared.Rounded
 import dev.lancy.studysmith.ui.shared.Size
-import dev.lancy.studysmith.ui.shared.Typography
 import dev.lancy.studysmith.utilities.ScreenSize
 import dev.lancy.studysmith.utilities.animatePlacement
 import dev.lancy.studysmith.utilities.selectedIndex
+import dev.lancy.studysmith.utilities.textHeight
+import dev.lancy.studysmith.utilities.textWidth
+import kotlinx.coroutines.runBlocking
 
 class MainNode(
     nodeContext: NodeContext,
+    private val visualisation: (UiContext) -> SpotlightSlider<MainNav> = { context ->
+        SpotlightSlider(
+            uiContext = context,
+            initialState = State(
+                MainNav.entries.map { State.Position(mapOf(Element(it) to State.ElementState.STANDARD)) },
+                activeIndex = MainNav.entries.indexOf(MainNav.StudyPage).toFloat(),
+            ),
+        )
+    },
     private val spotlight: Spotlight<MainNav> = Spotlight(
         model = SpotlightModel(
             items = MainNav.entries,
-            initialActiveIndex = 0f,
+            initialActiveIndex = MainNav.entries.indexOf(MainNav.StudyPage).toFloat(),
             savedStateMap = nodeContext.savedStateMap,
         ),
-        visualisation = {
-            SpotlightFader(
-                uiContext = it,
-                defaultAnimationSpec = spring(stiffness = Spring.StiffnessHigh),
-            )
-        },
-        gestureFactory = {
-            SpotlightSlider.Gestures(
-                transitionBounds = it,
-                orientation = Orientation.Horizontal,
-            )
-        },
+        visualisation = visualisation,
+        gestureFactory = { SpotlightSlider.Gestures(it) },
     ),
 ) : Node<MainNode.MainNav>(spotlight, nodeContext) {
+    /**
+     * Navigation targets for the main pages of the application.
+     *
+     * @param title The title of the navigation item.
+     * @param icon Given whether the item is selected, returns the appropriate icon. This function
+     * may suspend, in which case a glimmer effect will be applied while the icon is loading.
+     */
     @Parcelize
-    sealed class MainNav : Parcelable, NavTarget {
+    sealed class MainNav(
+        val title: String,
+        val icon: suspend (Boolean) -> ImageVector,
+    ) : Parcelable, NavTarget {
         /**
          * Study sessions are configured, started, and managed here.
          */
-        data object SessionsPage : MainNav()
+        data object StudyPage : MainNav("Study", { Lucide.Play })
 
         /**
          * Friends and groups are managed here.
          */
-        data object BuddiesPage : MainNav()
+        data object BuddiesPage : MainNav("Buddies", { Lucide.Users })
 
         /**
          * Study plans are created, edited, and viewed here.
          */
-        data object PlanPage : MainNav()
+        data object PlanPage : MainNav("Plan", { Lucide.ClipboardList })
 
         /**
          * Statistics, progress tracking, and insights are displayed here.
          */
-        data object StatsPage : MainNav()
+        data object StatsPage : MainNav("Stats", { Lucide.ChartNoAxesColumn })
 
         /**
          * The user's profile and settings are managed here.
          */
-        data object MePage : MainNav()
+        data object MePage : MainNav("Me", { Lucide.CircleUser })
 
         companion object {
-            val entries: List<MainNav> =
-                listOf(SessionsPage, BuddiesPage, PlanPage, StatsPage, MePage)
+            val entries: List<MainNav> = listOf(StudyPage, BuddiesPage, PlanPage, StatsPage, MePage)
         }
     }
 
     override fun buildChildNode(
         navTarget: MainNav,
         nodeContext: NodeContext,
-    ): Node<*> = when (navTarget) {
-        SessionsPage -> node(nodeContext) { Text("Sessions Page") }
-        BuddiesPage -> node(nodeContext) { Text("Buddies Page") }
-        PlanPage -> node(nodeContext) { Text("Plan Page") }
-        StatsPage -> node(nodeContext) { Text("Stats Page") }
-        MePage -> node(nodeContext) { Text("Me Page") }
+    ): Node<*> = node(nodeContext) {
+        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(runBlocking { navTarget.icon(true) }, contentDescription = null)
+            Text(navTarget.title)
+        }
     }
 
     @Composable
     override fun Content(modifier: Modifier) {
         val hazeState = remember { HazeState() }
+        var navExpanded by remember { mutableStateOf(true) }
 
-        Box(modifier) {
+        Box(modifier.fillMaxSize()) {
             AppyxNavigationContainer(
                 appyxComponent = spotlight,
                 modifier = Modifier
                     .fillMaxSize()
                     .haze(hazeState)
-                    .background(ColourScheme.primaryContainer),
+                    .background(ColourScheme.background),
             )
 
-            Navigation(hazeState)
+            TrackerBar(navExpanded, hazeState) { navExpanded = !navExpanded }
+            MainNav(navExpanded, hazeState)
         }
     }
 
-    private object NavHeight {
-        val ExpandedTop = 50.dp
+    private object NavSize {
+        val TopHeight = 50.dp
 
-        val ExpandedBottom = 70.dp
+        val BottomHeight = 70.dp
 
-        val Collapsed = 45.dp
-    }
-
-    /**
-     * The navigation bar is a blatant imitation of the new Liquid Glass iOS design language. It has
-     * two states which are animated between:
-     *
-     * ## Expanded
-     * ```
-     * ╭───────────────────────────────────────────────╮
-     * │ <tracker bar> stuff goes here                 │
-     * ╰───────────────────────────────────────────────╯
-     * ╭────────────────────────────────────────╮ ╭────╮
-     * │ <nav item> ............... <nav item>  │ │ ME │
-     * ╰────────────────────────────────────────╯ ╰────╯
-     * ```
-     *
-     * ## Collapsed (shorter in height)
-     * ╭───    ─╮ ╭─────────────────────────────╮ ╭────╮
-     * │ <curr> │ │ <tracker bar> stuff         │ │ ME │
-     * ╰─    ───╯ ╰─────────────────────────────╯ ╰────╯
-     */
-    @Composable
-    private fun BoxScope.Navigation(hazeState: HazeState) {
-        var expanded by remember { mutableStateOf(true) }
-
-        TrackerBar(expanded, hazeState) { expanded = !expanded }
-        MainNav(expanded, hazeState)
-        MeNav(expanded, hazeState)
+        val CollapsedSize = 45.dp
     }
 
     @Composable
@@ -197,201 +182,212 @@ class MainNode(
         hazeState: HazeState,
         callback: () -> Unit,
     ) {
-        val trackerBarHeight by animateDpAsState(
-            if (expanded) NavHeight.ExpandedTop else NavHeight.Collapsed,
+        val paddingStart by animateDpAsState(
+            if (expanded) Padding.Medium else (Padding.Medium * 2) + NavSize.CollapsedSize,
             animationSpec = Animation.medium(),
-            label = "TrackerBarHeight",
+            label = "TrackerBarPaddingLeft",
         )
 
-        val trackerBarCornerRadius by animateIntAsState(
-            if (expanded) RoundedPercent.LARGE else RoundedPercent.FULL,
-            animationSpec = Animation.medium(),
-            label = "TrackerBarCornerRadius",
-        )
-
-        val trackerBarWidth by animateDpAsState(
-            ScreenSize.width -
-                (Padding.Medium * if (expanded) 2 else 4) -
-                (if (expanded) 0.dp else NavHeight.Collapsed * 2),
-            animationSpec = Animation.medium(),
-            label = "TrackerBarWidth",
-        )
-
-        val trackerBarPadding by animateDpAsState(
+        val paddingBottom by animateDpAsState(
             // Expanded: Above and below main nav, and main nav itself.
-            if (expanded) Padding.Medium * 2 + NavHeight.ExpandedBottom else Padding.Medium,
+            if (expanded) Padding.Medium * 2 + NavSize.BottomHeight else Padding.Medium,
+            animationSpec = Animation.medium(),
+            label = "TrackerBarPaddingBottom",
+        )
+
+        val height by animateDpAsState(
+            if (expanded) NavSize.TopHeight else NavSize.CollapsedSize,
             animationSpec = Animation.short(),
-            label = "TrackerBarPadding",
+            label = "TrackerBarHeight",
         )
 
         Box(
             modifier = Modifier
                 // Align to bottom, then control positioning with padding.
-                .align(Alignment.BottomCenter)
-                .padding(start = Padding.Medium, end = Padding.Medium, bottom = trackerBarPadding)
+                .align(Alignment.BottomEnd)
+                .padding(start = paddingStart, end = Padding.Medium, bottom = paddingBottom)
                 // The width is controlled implicitly by other elements and max row count.
-                .width(trackerBarWidth)
-                .height(trackerBarHeight)
-                .clip(RoundedCornerShape(trackerBarCornerRadius))
+                .fillMaxWidth()
+                .height(height)
+                .clip(Rounded.Large)
                 .animatePlacement()
-                .hazeChild(
-                    state = hazeState,
-                    style = Const.HazeStyle,
-                    shape = RoundedCornerShape(trackerBarCornerRadius),
-                ).clickable { callback() },
+                .hazeChild(hazeState, shape = Rounded.Large, style = Haze.Primary)
+                .clickable { callback() },
         ) {
             Text("Tracker Bar")
         }
     }
 
     @Composable
-    private fun RowScope.IconTextNavItem(
-        title: String,
-        icon: ImageVector,
-        selected: Boolean,
+    private fun BoxScope.IconTextNavItem(
+        item: MainNav,
         expanded: Boolean,
-        callback: () -> Unit,
+        interactionSource: MutableInteractionSource,
+        index: Int = MainNav.entries.indexOf(item),
     ) {
+        val selected = isSelected(item)
+
+        // If not expanded, only show if selected. (Stop here.)
+        if (!expanded && !selected) return
+
         val colour by animateColorAsState(
             if (selected) ColourScheme.secondary else ColourScheme.onBackground,
             animationSpec = Animation.medium(),
-            label = "IconTextNavItemColour",
+            label = "NavItem[${item.title}]Colour",
+        )
+
+        val height by animateDpAsState(
+            if (expanded) NavSize.BottomHeight else NavSize.CollapsedSize,
+            animationSpec = Animation.medium(),
+            label = "MainNavHeight",
         )
 
         Column(
             modifier = Modifier
-                .weight(1f)
-                .clickable { callback() },
-            verticalArrangement = Arrangement.spacedBy(Padding.Small),
+                .fillMaxWidth()
+                .height(height)
+                .padding(Padding.Small / 2)
+                .clip(Rounded.Medium)
+                .selectable(
+                    selected = selected,
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Tab,
+                ) { spotlight.activate(index.toFloat()) },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
-                imageVector = icon,
-                contentDescription = title,
-                modifier = Modifier.size(Size.Small),
+                imageVector = runBlocking { item.icon(selected) },
+                contentDescription = item.title,
+                modifier = Modifier
+                    .padding(Padding.Small)
+                    .size(Size.Medium),
                 tint = colour,
             )
 
-            AnimatedVisibility(expanded) {
-                Text(
-                    text = title,
-                    color = colour,
-                    style = Typography.titleSmall,
-                )
-            }
+            // If not expanded but selected, show icon only. (Stop here.)
+            if (!expanded) return@Column
+
+            Text(
+                item.title,
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier
+                    .padding(
+                        bottom = Padding.Small,
+                        start = Padding.Small,
+                        end = Padding.Small,
+                    ),
+                color = colour,
+            )
         }
     }
-
-    @Composable
-    private fun isSelected(item: MainNav): Boolean =
-        spotlight.selectedIndex() == MainNav.entries.indexOf(item)
 
     @Composable
     private fun BoxScope.MainNav(
         expanded: Boolean,
         hazeState: HazeState,
     ) {
-        // When the main navigation is collapsed, it will be a single icon, nominally identical to
-        // the "Me" icon, which is always present. Hence it is [NavHeight.Collapsed].
-        val mainNavWidth by animateDpAsState(
-            if (expanded) {
-                // Either side, between the main and me navs, and the me nav itself.
-                ScreenSize.width - (Padding.Medium * 3) - NavHeight.ExpandedBottom
-            } else {
-                NavHeight.Collapsed
-            },
-            animationSpec = Animation.medium(),
-            label = "MainNavWidth",
+        val interactionSource = remember { MutableInteractionSource() }
+
+        val paddingEnd by animateDpAsState(
+            if (expanded) Padding.Medium else ScreenSize.width - Padding.Medium - NavSize.CollapsedSize,
+            animationSpec = Animation.long(),
+            label = "MainNavPaddingEnd",
         )
 
-        val mainNavHeight by animateDpAsState(
-            if (expanded) NavHeight.ExpandedBottom else NavHeight.Collapsed,
-            animationSpec = Animation.medium(),
-            label = "MainNavHeight",
-        )
-
-        Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier =
-                Modifier
-                    // Align to bottom left always - no need to control positioning otherwise.
-                    .align(Alignment.BottomStart)
-                    .padding(start = Padding.Medium, bottom = Padding.Medium)
-                    .width(mainNavWidth)
-                    .height(mainNavHeight)
-                    .clip(Shape.Full)
-                    .animatePlacement()
-                    .hazeChild(state = hazeState, style = Const.HazeStyle, shape = Shape.Full),
-        ) {
-            // Show also when [MePage] is selected, so that the left nav is never empty.
-            AnimatedVisibility(expanded || isSelected(SessionsPage) || isSelected(MePage)) {
-                IconTextNavItem(
-                    title = "Study",
-                    // TODO: dynamic based on if session is active or not.
-                    icon = Lucide.Play,
-                    selected = isSelected(SessionsPage),
-                    expanded = expanded,
-                ) { spotlight.activate(MainNav.entries.indexOf(SessionsPage).toFloat()) }
-            }
-
-            listOf(
-                Triple("Buddies", Lucide.Users, BuddiesPage),
-                Triple("Plan", Lucide.ClipboardList, PlanPage),
-                Triple("Stats", Lucide.ChartNoAxesColumn, StatsPage),
-            ).forEachIndexed { index, (title, icon, navItem) ->
-                AnimatedVisibility(expanded || isSelected(navItem)) {
-                    IconTextNavItem(
-                        title = title,
-                        icon = icon,
-                        selected = isSelected(navItem),
-                        expanded = expanded,
-                    ) { spotlight.activate(MainNav.entries.indexOf(navItem).toFloat()) }
+        TabRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = Padding.Medium, end = paddingEnd, bottom = Padding.Medium)
+                .align(Alignment.BottomStart)
+                .background(Color.Transparent)
+                .clip(Rounded.Medium)
+                .hazeChild(hazeState, shape = Rounded.Medium, style = Haze.Primary),
+            containerColor = Color.Transparent,
+            contentColor = ColourScheme.primary,
+            selectedTabIndex = spotlight.selectedIndex(),
+            indicator = { Indicator(it, expanded, interactionSource) },
+            divider = {},
+            tabs = {
+                MainNav.entries.forEachIndexed { index, item ->
+                    IconTextNavItem(item, expanded, interactionSource)
                 }
-            }
-        }
+            },
+        )
     }
 
     @Composable
-    private fun BoxScope.MeNav(
+    private fun Indicator(
+        tabPositions: List<TabPosition>,
         expanded: Boolean,
-        hazeState: HazeState,
+        interactionSoruce: MutableInteractionSource,
     ) {
-        val meNavSize by animateDpAsState(
-            if (expanded) NavHeight.ExpandedBottom else NavHeight.Collapsed,
-            animationSpec = Animation.medium(),
-            label = "MeNavSize",
-        )
+        // No indicator while collapsed.
+        if (!expanded) return
+        val selectedIndex = spotlight.selectedIndex()
 
-        val meIconSize by animateDpAsState(
-            if (expanded) Size.Medium else Size.Small,
-            animationSpec = Animation.medium(),
-            label = "MeIconSize",
-        )
+        // No indicator if no tabs are selected.
+        if (selectedIndex >= tabPositions.size) return
 
-        val meNavColour by animateColorAsState(
-            if (isSelected(MePage)) ColourScheme.secondary else ColourScheme.onBackground,
+        val indWidth by animateDpAsState(
+            // Text width of the selected item or icon (biggest), plus some padding.
+            max(
+                Size.Medium,
+                textWidth(
+                    MainNav.entries[selectedIndex].title,
+                    MaterialTheme.typography.titleSmall,
+                ),
+            ) + Padding.Medium * 2,
             animationSpec = Animation.short(),
-            label = "MeNavColor",
+            label = "MainNavIndicatorWidth",
         )
 
-        IconButton(
-            onClick = { spotlight.activate(MainNav.entries.indexOf(MePage).toFloat()) },
-            modifier =
-                Modifier
-                    // Align to bottom right always - no need to control positioning otherwise.
-                    .align(Alignment.BottomEnd)
-                    .padding(Padding.Medium)
-                    .size(meNavSize)
-                    .clip(Shape.Full)
-                    .hazeChild(state = hazeState, style = Const.HazeStyle, shape = Shape.Full),
-        ) {
-            Icon(
-                imageVector = Lucide.CircleUser,
-                contentDescription = "About Me",
-                modifier = Modifier.size(meIconSize),
-                tint = meNavColour,
+        val indHeight by animateDpAsState(
+            // Text and icon height, space between, and a bit extra.
+            textHeight(
+                MainNav.entries[selectedIndex].title,
+                MaterialTheme.typography.titleSmall,
+            ) + Size.Medium + Padding.Small * 1.5f,
+            animationSpec = Animation.short(),
+            label = "MainNavIndicatorHeight",
+        )
+
+        val anchors = remember(tabPositions) {
+            DraggableAnchors {
+                tabPositions.forEachIndexed { index, tab ->
+                    index at tab.left.value
+                }
+            }
+        }
+
+        val draggableState = remember(anchors) {
+            AnchoredDraggableState(
+                initialValue = selectedIndex,
+                anchors = anchors,
             )
         }
+
+        LaunchedEffect(draggableState.currentValue) {
+            spotlight.activate(draggableState.currentValue.toFloat())
+        }
+
+        TabRowDefaults.PrimaryIndicator(
+            modifier = Modifier
+                .tabIndicatorOffset(tabPositions[selectedIndex])
+                .padding(vertical = Padding.Small)
+                .anchoredDraggable(
+                    state = draggableState,
+                    orientation = Orientation.Horizontal,
+                    interactionSource = interactionSoruce,
+                ),
+            width = indWidth,
+            height = indHeight,
+            color = ColourScheme.primaryContainer.copy(alpha = 0.3f),
+            shape = Rounded.Small,
+        )
     }
+
+    @Composable
+    private fun isSelected(item: MainNav): Boolean =
+        spotlight.selectedIndex() == MainNav.entries.indexOf(item)
 }

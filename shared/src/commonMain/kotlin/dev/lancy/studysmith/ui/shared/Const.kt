@@ -26,7 +26,7 @@ object Size {
     val Large = 48.dp
 }
 
-object Shape {
+object Rounded {
     val Small = RoundedCornerShape(10)
 
     val Medium = RoundedCornerShape(33)
@@ -46,15 +46,20 @@ object RoundedPercent {
     const val FULL = 100
 }
 
-object Const {
-    val HazeStyle
+object Haze {
+    val Dark
         @Composable get() = HazeStyle(ColourScheme.background.copy(alpha = 0.3f), Padding.Small, 0.2f)
+
+    val Primary
+        @Composable get() = HazeStyle(ColourScheme.primary.copy(alpha = 0.3f), Padding.Small, 0f)
 }
 
 object Animation {
     fun <T> short(): AnimationSpec<T> = tween(100, 0)
 
     fun <T> medium(): AnimationSpec<T> = tween(300, 0)
+
+    fun <T> long(): AnimationSpec<T> = tween(500, 0)
 }
 
 val Typography: Typography
