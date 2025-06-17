@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">StudySmith</string>
+    <string name="tab_study">Study</string>
+    <string name="tab_buddies">Buddies</string>
+    <string name="tab_plan">Plan</string>
+    <string name="tab_stats">Stats</string>
+    <string name="tab_me">Me</string>
+    <string name="study_i_want_to_have">I want to have</string>
+    <string name="study_app_blocker_title">App Blocker</string>
+    <string name="study_app_blocker_description">Block distracting apps from being used during study.</string>
+</resources>

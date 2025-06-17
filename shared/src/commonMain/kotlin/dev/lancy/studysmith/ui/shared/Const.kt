@@ -9,6 +9,9 @@ import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeStyle
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
+import studysmith.shared.generated.resources.Res
 
 object Padding {
     val Small = 4.dp
@@ -67,3 +70,8 @@ val Typography: Typography
 
 val ColourScheme: ColorScheme
     @Composable get() = MaterialTheme.colorScheme
+
+internal val Str = Res.string
+
+@Composable
+internal fun StringResource.dump(): String = stringResource(this)
