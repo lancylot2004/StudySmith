@@ -27,6 +27,8 @@ object Size {
     val Medium = 36.dp
 
     val Large = 48.dp
+
+    val ExtraLarge = 64.dp
 }
 
 object Rounded {
@@ -54,7 +56,10 @@ object Haze {
         @Composable get() = HazeStyle(ColourScheme.background.copy(alpha = 0.3f), Padding.Small, 0.2f)
 
     val Primary
-        @Composable get() = HazeStyle(ColourScheme.primary.copy(alpha = 0.3f), Padding.Small, 0f)
+        @Composable get() = HazeStyle(ColourScheme.primaryContainer.copy(alpha = 0.3f), Padding.Small, 0f)
+
+    val Secondary
+        @Composable get() = HazeStyle(ColourScheme.secondaryContainer.copy(alpha = 0.3f), Padding.Small, 0f)
 }
 
 object Animation {

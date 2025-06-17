@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
 import androidx.compose.material3.TabPosition
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -38,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import com.bumble.appyx.components.spotlight.Spotlight
@@ -71,6 +71,7 @@ import dev.lancy.studysmith.ui.shared.Padding
 import dev.lancy.studysmith.ui.shared.Rounded
 import dev.lancy.studysmith.ui.shared.Size
 import dev.lancy.studysmith.ui.shared.Str
+import dev.lancy.studysmith.ui.shared.Typography
 import dev.lancy.studysmith.ui.shared.dump
 import dev.lancy.studysmith.utilities.ScreenSize
 import dev.lancy.studysmith.utilities.animatePlacement
@@ -222,11 +223,51 @@ class MainNode(
                 .height(height)
                 .clip(Rounded.Large)
                 .animatePlacement()
-                .hazeChild(hazeState, shape = Rounded.Large, style = Haze.Primary)
+                .hazeChild(hazeState, shape = Rounded.Large, style = Haze.Secondary)
                 .clickable { callback() },
         ) {
-            Text("Tracker Bar")
+            Text(
+                "Start Session",
+                modifier = Modifier.align(Alignment.Center),
+                style = Typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = ColourScheme.onSecondaryContainer,
+            )
         }
+    }
+
+    @Composable
+    private fun BoxScope.MainNav(
+        expanded: Boolean,
+        hazeState: HazeState,
+    ) {
+        val interactionSource = remember { MutableInteractionSource() }
+
+        val paddingEnd by animateDpAsState(
+            if (expanded) Padding.Medium else ScreenSize.width - Padding.Medium - NavSize.CollapsedSize,
+            animationSpec = Animation.long(),
+            label = "MainNavPaddingEnd",
+        )
+
+        TabRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = Padding.Medium, end = paddingEnd, bottom = Padding.Medium)
+                .align(Alignment.BottomStart)
+                .background(Color.Transparent)
+                .clip(Rounded.Medium)
+                .hazeChild(hazeState, shape = Rounded.Medium, style = Haze.Primary),
+            containerColor = Color.Transparent,
+            contentColor = ColourScheme.primary,
+            selectedTabIndex = spotlight.selectedIndex(),
+            indicator = { Indicator(it, expanded, interactionSource) },
+            divider = {},
+            tabs = {
+                MainNav.entries.forEachIndexed { index, item ->
+                    IconTextNavItem(item, expanded, interactionSource)
+                }
+            },
+        )
     }
 
     @Composable
@@ -291,40 +332,6 @@ class MainNode(
                 color = colour,
             )
         }
-    }
-
-    @Composable
-    private fun BoxScope.MainNav(
-        expanded: Boolean,
-        hazeState: HazeState,
-    ) {
-        val interactionSource = remember { MutableInteractionSource() }
-
-        val paddingEnd by animateDpAsState(
-            if (expanded) Padding.Medium else ScreenSize.width - Padding.Medium - NavSize.CollapsedSize,
-            animationSpec = Animation.long(),
-            label = "MainNavPaddingEnd",
-        )
-
-        TabRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = Padding.Medium, end = paddingEnd, bottom = Padding.Medium)
-                .align(Alignment.BottomStart)
-                .background(Color.Transparent)
-                .clip(Rounded.Medium)
-                .hazeChild(hazeState, shape = Rounded.Medium, style = Haze.Primary),
-            containerColor = Color.Transparent,
-            contentColor = ColourScheme.primary,
-            selectedTabIndex = spotlight.selectedIndex(),
-            indicator = { Indicator(it, expanded, interactionSource) },
-            divider = {},
-            tabs = {
-                MainNav.entries.forEachIndexed { index, item ->
-                    IconTextNavItem(item, expanded, interactionSource)
-                }
-            },
-        )
     }
 
     @Composable

@@ -8,4 +8,8 @@
     <string name="study_i_want_to_have">I want to have</string>
     <string name="study_app_blocker_title">App Blocker</string>
     <string name="study_app_blocker_description">Block distracting apps from being used during study.</string>
+    <string name="study_web_blocker_title">Web Blocker</string>
+    <string name="study_web_blocker_description">Block distracting websites from being accessed during study.</string>
+    <string name="study_dnd_title">Silence Notifications</string>
+    <string name="study_dnd_description">Silence pings from messages, social media, and more.</string>
 </resources>
