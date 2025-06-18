@@ -176,7 +176,7 @@ class MainNode(
             )
 
             TrackerBar(navExpanded, hazeState) { navExpanded = !navExpanded }
-            MainNav(navExpanded, hazeState)
+            MainNav(navExpanded, hazeState) { navExpanded = !navExpanded }
         }
     }
 
@@ -240,6 +240,7 @@ class MainNode(
     private fun BoxScope.MainNav(
         expanded: Boolean,
         hazeState: HazeState,
+        setExpanded: (Boolean) -> Unit,
     ) {
         val interactionSource = remember { MutableInteractionSource() }
 
@@ -256,7 +257,13 @@ class MainNode(
                 .align(Alignment.BottomStart)
                 .background(Color.Transparent)
                 .clip(Rounded.Medium)
-                .hazeChild(hazeState, shape = Rounded.Medium, style = Haze.Primary),
+                .hazeChild(hazeState, shape = Rounded.Medium, style = Haze.Primary)
+                .clickable(
+                    enabled = !expanded,
+                    role = Role.Switch,
+                    interactionSource = interactionSource,
+                    indication = null,
+                ) { setExpanded(!expanded) },
             containerColor = Color.Transparent,
             contentColor = ColourScheme.primary,
             selectedTabIndex = spotlight.selectedIndex(),
@@ -304,6 +311,7 @@ class MainNode(
                     selected = selected,
                     interactionSource = interactionSource,
                     indication = null,
+                    enabled = expanded,
                     role = Role.Tab,
                 ) { spotlight.activate(index.toFloat()) },
             horizontalAlignment = Alignment.CenterHorizontally,

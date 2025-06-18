@@ -32,11 +32,11 @@ object Size {
 }
 
 object Rounded {
-    val Small = RoundedCornerShape(10)
+    val Small = RoundedCornerShape(5.dp)
 
-    val Medium = RoundedCornerShape(33)
+    val Medium = RoundedCornerShape(10.dp)
 
-    val Large = RoundedCornerShape(75)
+    val Large = RoundedCornerShape(20.dp)
 
     val Full = RoundedCornerShape(100)
 }

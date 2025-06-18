@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,8 +28,10 @@ import com.bumble.appyx.navigation.modality.NodeContext
 import com.bumble.appyx.navigation.node.LeafNode
 import com.composables.icons.lucide.AppWindowMac
 import com.composables.icons.lucide.Bell
+import com.composables.icons.lucide.ChevronDown
 import com.composables.icons.lucide.Globe
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Users
 import dev.lancy.studysmith.structures.SessionConfiguration
 import dev.lancy.studysmith.ui.shared.ColourScheme
 import dev.lancy.studysmith.ui.shared.Padding
@@ -41,6 +45,7 @@ import studysmith.shared.generated.resources.study_app_blocker_title
 import studysmith.shared.generated.resources.study_dnd_description
 import studysmith.shared.generated.resources.study_dnd_title
 import studysmith.shared.generated.resources.study_i_want_to_have
+import studysmith.shared.generated.resources.study_im_studying_with
 import studysmith.shared.generated.resources.study_web_blocker_description
 import studysmith.shared.generated.resources.study_web_blocker_title
 
@@ -58,11 +63,65 @@ class StudyPage(
                 .fillMaxSize()
                 .padding(Padding.Large),
         ) {
-            Text(
-                Str.study_i_want_to_have.dump(),
-                style = Typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-            )
+            SectionTitle(Str.study_im_studying_with.dump())
+            var dropdownWithExpanded by remember { mutableStateOf(true) }
+
+            LazyColumn {
+                item {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(Padding.Medium),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(Rounded.Small)
+                            .background(ColourScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(Size.ExtraLarge)
+                                .clip(Rounded.Small)
+                                .background(ColourScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Lucide.Users,
+                                contentDescription = Str.study_im_studying_with.dump(),
+                                modifier = Modifier.size(Size.Medium),
+                            )
+                        }
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(Padding.Small),
+                            horizontalAlignment = Alignment.Start,
+                            modifier = Modifier.weight(1f).padding(Padding.Small),
+                        ) {
+                            Text(
+                                "Funky Farm",
+                                style = Typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+
+                            Text(
+                                "Kai, Lawan, and Mo are online.",
+                                style = Typography.bodyMedium,
+                                color = ColourScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {},
+                        ) {
+                            Icon(
+                                imageVector = Lucide.ChevronDown,
+                                contentDescription = "See More Groups",
+                                modifier = Modifier.size(Size.Medium),
+                            )
+                        }
+                    }
+                }
+            }
+
+            SectionTitle(Str.study_i_want_to_have.dump())
 
             BinarySetting(
                 checked = config.useAppBlocker,
@@ -86,6 +145,13 @@ class StudyPage(
             ) { config = config.copy(useDoNotDisturb = it) }
         }
     }
+
+    @Composable
+    private fun SectionTitle(string: String) = Text(
+        string,
+        style = Typography.headlineMedium,
+        fontWeight = FontWeight.Bold,
+    )
 
     @Composable
     private fun BinarySetting(

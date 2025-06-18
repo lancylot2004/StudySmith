@@ -12,4 +12,6 @@
     <string name="study_web_blocker_description">Block distracting websites from being accessed during study.</string>
     <string name="study_dnd_title">Silence Notifications</string>
     <string name="study_dnd_description">Silence pings from messages, social media, and more.</string>
+    <string name="study_im_studying_with">I'm studying with</string>
+    <string name="study_with_none">Buddy up, study together, and keep each other accountable.</string>
 </resources>
