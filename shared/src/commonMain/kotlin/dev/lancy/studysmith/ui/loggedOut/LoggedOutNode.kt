@@ -1,4 +1,4 @@
-package dev.lancy.studysmith.ui
+package dev.lancy.studysmith.ui.loggedOut
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -10,47 +10,48 @@ import com.bumble.appyx.navigation.modality.NodeContext
 import com.bumble.appyx.navigation.node.Node
 import com.bumble.appyx.utils.multiplatform.Parcelable
 import com.bumble.appyx.utils.multiplatform.Parcelize
-import dev.lancy.studysmith.ui.loggedOut.LoggedOutNode
-import dev.lancy.studysmith.ui.main.MainNode
 import dev.lancy.studysmith.ui.shared.NavTarget
 
-class RootNode(
+class LoggedOutNode(
     nodeContext: NodeContext,
-    private val backStack: BackStack<RootNav> = BackStack(
+    private val backStack: BackStack<LoggedOutNav> = BackStack(
         model = BackStackModel(
             // TODO: Update after authentication is finalised.
-            initialTargets = listOf(RootNav.LoggedOut),
+            initialTargets = listOf(LoggedOutNav.Landing),
             savedStateMap = nodeContext.savedStateMap,
         ),
         visualisation = { BackStackFader(it) },
     ),
-) : Node<RootNode.RootNav>(backStack, nodeContext) {
+) : Node<LoggedOutNode.LoggedOutNav>(backStack, nodeContext) {
     @Parcelize
-    sealed class RootNav : Parcelable, NavTarget {
+    sealed class LoggedOutNav : Parcelable, NavTarget {
         /**
-         * [Main] contains the primary pages / tabs of the application.
+         * [Landing] contains links to the authentication or onboarding flows.
          */
-        data object Main : RootNav()
+        data object Landing : LoggedOutNav()
 
         /**
-         * [LoggedOut] contains the authentication flows and onboarding.
+         * [Login] contains the login flow for existing users.
          */
-        data object LoggedOut : RootNav()
+        data object Login : LoggedOutNav()
+
+        /**
+         * [Register] contains the registration and onboarding flow for new users.
+         */
+        data object Register : LoggedOutNav()
     }
 
     override fun buildChildNode(
-        navTarget: RootNav,
+        navTarget: LoggedOutNav,
         nodeContext: NodeContext,
     ): Node<*> = when (navTarget) {
-        RootNav.Main -> MainNode(nodeContext)
-        RootNav.LoggedOut -> LoggedOutNode(nodeContext)
+        LoggedOutNav.Landing -> LandingPage(nodeContext)
+        LoggedOutNav.Login -> TODO()
+        LoggedOutNav.Register -> TODO()
     }
 
     @Composable
     override fun Content(modifier: Modifier) {
-        AppyxNavigationContainer(
-            appyxComponent = backStack,
-            modifier = modifier,
-        )
+        AppyxNavigationContainer(backStack, modifier)
     }
 }

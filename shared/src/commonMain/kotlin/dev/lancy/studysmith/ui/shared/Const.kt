@@ -16,6 +16,8 @@ object Padding {
     val Medium = 8.dp
 
     val Large = 16.dp
+
+    val ExtraLarge = 36.dp
 }
 
 object Size {
@@ -24,6 +26,8 @@ object Size {
     val Medium = 36.dp
 
     val Large = 48.dp
+
+    val ExtraLarge = 56.dp
 }
 
 object Rounded {
