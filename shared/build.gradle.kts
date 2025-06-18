@@ -62,7 +62,6 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.ui)
             implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
@@ -83,7 +82,7 @@ kotlin {
 
             // Kamel | https://github.com/Kamel-Media/Kamel | Apache-2.0
             // Images not loading? Don't forget to import other optional dependencies...
-            implementation(libs.kamel.core)
+            implementation(libs.kamel.default)
 
             // Async Web Client | https://github.com/ktorio/ktor | Apache-2.0
             implementation(libs.ktor.client.core)
@@ -105,7 +104,13 @@ android {
 
     defaultConfig {
         applicationId = "dev.lancy.studysmith"
-        minSdk = 24
+
+        // Newer `ktor` versions require a minimum SDK of 30 - somewhere internally it uses spaces
+        // in a [SimpleName] ('use streaming syntax'), which isn't allowed prior to DEX version 040.
+        // https://stackoverflow.com/questions/75578780/com-android-tools-r8-internal-jc-space-characters-in-simplename-exception-are-n
+        // https://kotlinlang.org/docs/coding-conventions.html#names-for-test-methods
+        minSdk = 30
+
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -127,6 +132,7 @@ android {
             }
         }
     }
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
@@ -137,8 +143,4 @@ android {
         sourceCompatibility = JavaVersion.VERSION_23
         targetCompatibility = JavaVersion.VERSION_23
     }
-}
-
-dependencies {
-    debugImplementation(compose.uiTooling)
 }
