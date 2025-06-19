@@ -1,17 +1,20 @@
 package dev.lancy.studysmith.ui.main.study
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,11 +31,10 @@ import com.bumble.appyx.navigation.modality.NodeContext
 import com.bumble.appyx.navigation.node.LeafNode
 import com.composables.icons.lucide.AppWindowMac
 import com.composables.icons.lucide.Bell
-import com.composables.icons.lucide.ChevronDown
 import com.composables.icons.lucide.Globe
 import com.composables.icons.lucide.Lucide
-import com.composables.icons.lucide.Users
 import dev.lancy.studysmith.structures.SessionConfiguration
+import dev.lancy.studysmith.structures.data.StudyGroup
 import dev.lancy.studysmith.ui.shared.ColourScheme
 import dev.lancy.studysmith.ui.shared.Padding
 import dev.lancy.studysmith.ui.shared.Rounded
@@ -40,6 +42,8 @@ import dev.lancy.studysmith.ui.shared.Size
 import dev.lancy.studysmith.ui.shared.Str
 import dev.lancy.studysmith.ui.shared.Typography
 import dev.lancy.studysmith.ui.shared.dump
+import dev.lancy.studysmith.utilities.fold
+import dev.lancy.studysmith.utilities.oxfordJoin
 import studysmith.shared.generated.resources.study_app_blocker_description
 import studysmith.shared.generated.resources.study_app_blocker_title
 import studysmith.shared.generated.resources.study_dnd_description
@@ -64,58 +68,37 @@ class StudyPage(
                 .padding(Padding.Large),
         ) {
             SectionTitle(Str.study_im_studying_with.dump())
-            var dropdownWithExpanded by remember { mutableStateOf(true) }
+            var dropdownWithExpanded by remember { mutableStateOf(false) }
+            var dropdownSelectedIndex by remember { mutableStateOf(0) }
 
-            LazyColumn {
-                item {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(Padding.Medium),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(Rounded.Small)
-                            .background(ColourScheme.surfaceVariant.copy(alpha = 0.5f)),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(Size.ExtraLarge)
-                                .clip(Rounded.Small)
-                                .background(ColourScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Lucide.Users,
-                                contentDescription = Str.study_im_studying_with.dump(),
-                                modifier = Modifier.size(Size.Medium),
-                            )
-                        }
+            // TODO: Tie into data.
+            val GROUPS = listOf<StudyGroup>(
+                StudyGroup("1", "Funky Bots", listOf("Kai", "Lawan", "Mo"), Lucide.Bell),
+                StudyGroup("2", "Stardew Valley", listOf("Sani", "Alex"), Lucide.Globe),
+                StudyGroup("3", "Cultivate Cultivate", listOf("Jack"), Lucide.AppWindowMac),
+            )
 
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(Padding.Small),
-                            horizontalAlignment = Alignment.Start,
-                            modifier = Modifier.weight(1f).padding(Padding.Small),
-                        ) {
-                            Text(
-                                "Funky Farm",
-                                style = Typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(Rounded.Small)
+                    .background(ColourScheme.surfaceVariant.copy(alpha = 0.5f)),
+            ) {
+                if (GROUPS.isEmpty()) {
+                    // TODO: determine connectivity
+                    item { CannotSelectGroups(true) }
+                    return@LazyColumn
+                }
 
-                            Text(
-                                "Kai, Lawan, and Mo are online.",
-                                style = Typography.bodyMedium,
-                                color = ColourScheme.onSurfaceVariant,
-                            )
-                        }
-
-                        IconButton(
-                            onClick = {},
-                        ) {
-                            Icon(
-                                imageVector = Lucide.ChevronDown,
-                                contentDescription = "See More Groups",
-                                modifier = Modifier.size(Size.Medium),
-                            )
+                itemsIndexed(GROUPS) { index, item ->
+                    AnimatedVisibility(dropdownWithExpanded || index == dropdownSelectedIndex) {
+                        GroupItem(item) {
+                            if (!dropdownWithExpanded) {
+                                dropdownWithExpanded = true
+                            } else {
+                                dropdownSelectedIndex = index
+                                dropdownWithExpanded = false
+                            }
                         }
                     }
                 }
@@ -195,12 +178,87 @@ class StudyPage(
                     description,
                     style = Typography.bodyMedium,
                     color = ColourScheme.onSurfaceVariant,
+                    minLines = 2,
                 )
             }
 
             Switch(
                 checked = checked,
                 onCheckedChange = { onCheckedChange(it) },
+            )
+        }
+    }
+
+    @Composable
+    private fun GroupItem(
+        group: StudyGroup,
+        callback: () -> Unit,
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Padding.Medium),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(Size.ExtraLarge)
+                .clickable { callback() },
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(Size.ExtraLarge)
+                    .clip(Rounded.Small)
+                    .background(ColourScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = group.thumbnail,
+                    contentDescription = Str.study_im_studying_with.dump(),
+                    modifier = Modifier.size(Size.Medium),
+                )
+            }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Padding.Small),
+                horizontalAlignment = Alignment.Start,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    text = group.name,
+                    style = Typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+
+                Text(
+                    text = group.members.oxfordJoin(", ", placeholder = "No one is online right now.", suffix = " are online..."),
+                    style = Typography.bodyMedium,
+                    color = ColourScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun CannotSelectGroups(offline: Boolean = false) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(Size.ExtraLarge)
+                .clickable {
+                    // TODO: Navigate to "Buddies"
+                },
+            verticalArrangement = Arrangement.spacedBy(Padding.Small, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                offline.fold("You're offline!", "Click here to get in a group."),
+                style = Typography.bodyLarge,
+                color = ColourScheme.onBackground,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Text(
+                offline.fold("Time to touch grass...?", "It's more fun with buddies!"),
+                style = Typography.bodyMedium,
+                color = ColourScheme.onSurfaceVariant,
             )
         }
     }
