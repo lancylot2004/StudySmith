@@ -13,6 +13,8 @@ ktor = "3.2.0"
 haze = "0.7.1"
 kotlin = "2.1.21"
 lucide = "1.0.0"
+rinku = "1.4.0"
+supabase = "3.1.4"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -46,8 +48,15 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 
+# https://github.com/supabase-community/supabase-kt
+supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt", version.ref = "supabase" }
+
 # https://github.com/mrmans0n/compose-rules
 detekt-compose = { module = "io.nlopez.compose.rules:detekt", version.ref = "detekt-compose" }
+
+# https://github.com/theolm/Rinku
+rinku = { module = "dev.theolm:rinku", version.ref = "rinku" }
+rinku-compose = { module = "dev.theolm:rinku-compose-ext", version.ref = "rinku" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

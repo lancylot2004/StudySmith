@@ -40,6 +40,10 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "shared"
             isStatic = true
+
+            // Export Rinku to iOS framework, to use in Swift.
+            // https://theolm.dev/Rinku/1-setup/
+            export(libs.rinku)
         }
     }
 
@@ -90,6 +94,13 @@ kotlin {
             // Lucide Icons | https://github.com/composablehorizons/composeicons | MIT
             //              | https://lucide.dev/ | ISC
             implementation(libs.composables.icons.lucide)
+
+            // Supabase Client | https://github.com/supabase-community/supabase-kt | MIT
+            implementation(libs.supabase.auth)
+
+            // Deep Linking | https://github.com/theolm/Rinku | MIT
+            api(libs.rinku)
+            implementation(libs.rinku.compose)
         }
 
         commonTest.dependencies {

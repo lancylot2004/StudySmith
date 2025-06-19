@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,15 +40,20 @@ import androidx.compose.ui.text.input.TextFieldValue
 import com.bumble.appyx.interactions.getPlatformName
 import com.bumble.appyx.navigation.modality.NodeContext
 import com.bumble.appyx.navigation.node.LeafNode
+import dev.lancy.studysmith.api.Client
 import dev.lancy.studysmith.ui.shared.ColourScheme
 import dev.lancy.studysmith.ui.shared.Padding
 import dev.lancy.studysmith.ui.shared.Rounded
 import dev.lancy.studysmith.ui.shared.Size
 import dev.lancy.studysmith.ui.shared.Typography
 import dev.lancy.studysmith.utilities.fold
+import io.github.jan.supabase.auth.providers.Apple
+import io.github.jan.supabase.auth.providers.Github
+import io.github.jan.supabase.auth.providers.Google
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
 import io.ktor.http.Url
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import studysmith.shared.generated.resources.Res
 import studysmith.shared.generated.resources.apple
@@ -59,6 +65,7 @@ class LandingPage(nodeContext: NodeContext) : LeafNode(nodeContext) {
     override fun Content(modifier: Modifier) {
         val focusManager = LocalFocusManager.current
         val interactionSource = remember { MutableInteractionSource() }
+        val scope = rememberCoroutineScope()
 
         var emailText by remember { mutableStateOf(TextFieldValue()) }
         var emailErrored by remember { mutableStateOf(false) }
@@ -177,7 +184,12 @@ class LandingPage(nodeContext: NodeContext) : LeafNode(nodeContext) {
                     text = "Continue with Apple",
                     containerColor = isSystemInDarkTheme().fold(Color.White, Color.Black),
                     contentColor = isSystemInDarkTheme().fold(Color.Black, Color.White),
-                ) { }
+                ) {
+                    scope.launch {
+                        focusManager.clearFocus()
+                        Client.auth.signInWith(Apple)
+                    }
+                }
             }
 
             SocialSignInButton(
@@ -185,14 +197,26 @@ class LandingPage(nodeContext: NodeContext) : LeafNode(nodeContext) {
                 text = "Continue with Google",
                 containerColor = Color.White,
                 contentColor = Color(0xFF111111),
-            ) { }
+            ) {
+                // TODO: Disable buttons or something
+
+                scope.launch {
+                    focusManager.clearFocus()
+                    Client.auth.signInWith(Google)
+                }
+            }
 
             SocialSignInButton(
                 painter = painterResource(Res.drawable.github),
                 text = "Continue with GitHub",
                 containerColor = Color.Black,
                 contentColor = Color.White,
-            ) { }
+            ) {
+                scope.launch {
+                    focusManager.clearFocus()
+                    Client.auth.signInWith(Github)
+                }
+            }
         }
     }
 

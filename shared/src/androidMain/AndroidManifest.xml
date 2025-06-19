@@ -15,6 +15,33 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Accepts HTTPS links. -->
+            <intent-filter
+                android:autoVerify="true"
+                android:label="">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                    android:host="studysmith.lancy.dev"
+                    android:pathPrefix="/" />
+            </intent-filter>
+            <!-- Accepts custom protocol. -->
+            <intent-filter android:label="">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="studysmith"
+                    android:host="app" />
+            </intent-filter>
+            <!-- Accepts custom protocol for authentication. -->
+            <intent-filter android:label="">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="studysmith"
+                    android:host="callback" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>
