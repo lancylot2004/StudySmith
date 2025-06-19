@@ -2,8 +2,10 @@ package dev.lancy.studysmith.ui.loggedOut
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -26,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -33,20 +36,23 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
+import com.bumble.appyx.interactions.getPlatformName
 import com.bumble.appyx.navigation.modality.NodeContext
 import com.bumble.appyx.navigation.node.LeafNode
-import com.composables.icons.lucide.Apple
-import com.composables.icons.lucide.Github
-import com.composables.icons.lucide.Goal
-import com.composables.icons.lucide.Lucide
 import dev.lancy.studysmith.ui.shared.ColourScheme
 import dev.lancy.studysmith.ui.shared.Padding
 import dev.lancy.studysmith.ui.shared.Rounded
 import dev.lancy.studysmith.ui.shared.Size
 import dev.lancy.studysmith.ui.shared.Typography
+import dev.lancy.studysmith.utilities.fold
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
 import io.ktor.http.Url
+import org.jetbrains.compose.resources.painterResource
+import studysmith.shared.generated.resources.Res
+import studysmith.shared.generated.resources.apple
+import studysmith.shared.generated.resources.github
+import studysmith.shared.generated.resources.google
 
 class LandingPage(nodeContext: NodeContext) : LeafNode(nodeContext) {
     @Composable
@@ -117,26 +123,6 @@ class LandingPage(nodeContext: NodeContext) : LeafNode(nodeContext) {
                 singleLine = true,
                 shape = Rounded.Medium,
             )
-//
-//            OutlinedTextField(
-//                value = passwordText,
-//                onValueChange = { passwordText = it },
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(horizontal = Padding.ExtraLarge),
-//                label = { Text("Password") },
-//                visualTransformation = PasswordVisualTransformation('*'),
-//                keyboardOptions = KeyboardOptions(
-//                    capitalization = KeyboardCapitalization.None,
-//                    autoCorrectEnabled = false,
-//                    keyboardType = KeyboardType.Password,
-//                    imeAction = ImeAction.Done,
-//                    showKeyboardOnFocus = true,
-//                ),
-//                singleLine = true,
-//                interactionSource = remember { MutableInteractionSource() },
-//                shape = Rounded.Medium,
-//            )
 
             OutlinedButton(
                 onClick = {},
@@ -161,74 +147,96 @@ class LandingPage(nodeContext: NodeContext) : LeafNode(nodeContext) {
                 Text("Continue", style = Typography.titleMedium)
             }
 
-            Divider(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Padding.ExtraLarge, vertical = Padding.Medium),
-                color = ColourScheme.outline.copy(alpha = 0.5f),
-            )
-
-            OutlinedButton(
-                onClick = { /* Google sign-in */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(Size.ExtraLarge)
                     .padding(horizontal = Padding.ExtraLarge),
-                shape = Rounded.Medium,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF111111),
-                ),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Padding.Medium),
             ) {
-                Icon(
-                    imageVector = Lucide.Goal,
-                    contentDescription = "Google",
-                    modifier = Modifier.size(Size.Medium),
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    color = ColourScheme.outline.copy(alpha = 0.5f),
                 )
-                Spacer(Modifier.width(Padding.Medium))
-                Text("Continue with Google", style = Typography.titleMedium)
+
+                Text(
+                    text = "or",
+                    style = Typography.titleMedium,
+                    color = ColourScheme.onSurfaceVariant,
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    color = ColourScheme.outline.copy(alpha = 0.5f),
+                )
             }
 
-            OutlinedButton(
-                onClick = { /* Apple sign-in */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(Size.ExtraLarge)
-                    .padding(horizontal = Padding.ExtraLarge),
-                shape = Rounded.Medium,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFA2AAAD),
-                    contentColor = Color.Black,
-                ),
-            ) {
-                Icon(
-                    imageVector = Lucide.Apple,
-                    contentDescription = "Apple",
-                    modifier = Modifier.size(Size.Medium),
-                )
-                Spacer(Modifier.width(Padding.Medium))
-                Text("Continue with Apple", style = Typography.titleMedium)
+            if (getPlatformName() == "iOS") {
+                SocialSignInButton(
+                    painter = painterResource(Res.drawable.apple),
+                    text = "Continue with Apple",
+                    containerColor = isSystemInDarkTheme().fold(Color.White, Color.Black),
+                    contentColor = isSystemInDarkTheme().fold(Color.Black, Color.White),
+                ) { }
             }
 
-            OutlinedButton(
-                onClick = { /* GitHub sign-in */ },
+            SocialSignInButton(
+                painter = painterResource(Res.drawable.google),
+                text = "Continue with Google",
+                containerColor = Color.White,
+                contentColor = Color(0xFF111111),
+            ) { }
+
+            SocialSignInButton(
+                painter = painterResource(Res.drawable.github),
+                text = "Continue with GitHub",
+                containerColor = Color.Black,
+                contentColor = Color.White,
+            ) { }
+        }
+    }
+
+    @Composable
+    fun SocialSignInButton(
+        painter: Painter,
+        text: String,
+        containerColor: Color,
+        contentColor: Color,
+        onClick: () -> Unit,
+    ) {
+        OutlinedButton(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(Size.ExtraLarge)
+                .padding(horizontal = Padding.ExtraLarge),
+            shape = Rounded.Medium,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = containerColor,
+                contentColor = contentColor,
+            ),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(Size.ExtraLarge)
                     .padding(horizontal = Padding.ExtraLarge),
-                shape = Rounded.Medium,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.White,
-                ),
             ) {
                 Icon(
-                    imageVector = Lucide.Github, // Replace with actual GitHub icon
-                    contentDescription = "GitHub",
+                    painter = painter,
+                    contentDescription = text,
                     modifier = Modifier.size(Size.Medium),
+                    tint = Color.Unspecified,
                 )
+
                 Spacer(Modifier.width(Padding.Medium))
-                Text("Continue with GitHub", style = Typography.titleMedium)
+
+                Text(
+                    text,
+                    style = Typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                )
             }
         }
     }
