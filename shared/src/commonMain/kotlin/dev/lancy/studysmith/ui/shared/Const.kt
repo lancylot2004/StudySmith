@@ -9,6 +9,9 @@ import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeStyle
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
+import studysmith.shared.generated.resources.Res
 
 object Padding {
     val Small = 4.dp
@@ -31,11 +34,11 @@ object Size {
 }
 
 object Rounded {
-    val Small = RoundedCornerShape(10)
+    val Small = RoundedCornerShape(5.dp)
 
-    val Medium = RoundedCornerShape(33)
+    val Medium = RoundedCornerShape(10.dp)
 
-    val Large = RoundedCornerShape(75)
+    val Large = RoundedCornerShape(20.dp)
 
     val Full = RoundedCornerShape(100)
 }
@@ -55,7 +58,10 @@ object Haze {
         @Composable get() = HazeStyle(ColourScheme.background.copy(alpha = 0.3f), Padding.Small, 0.2f)
 
     val Primary
-        @Composable get() = HazeStyle(ColourScheme.primary.copy(alpha = 0.3f), Padding.Small, 0f)
+        @Composable get() = HazeStyle(ColourScheme.primaryContainer.copy(alpha = 0.3f), Padding.Small, 0f)
+
+    val Secondary
+        @Composable get() = HazeStyle(ColourScheme.secondaryContainer.copy(alpha = 0.3f), Padding.Small, 0f)
 }
 
 object Animation {
@@ -71,3 +77,8 @@ val Typography: Typography
 
 val ColourScheme: ColorScheme
     @Composable get() = MaterialTheme.colorScheme
+
+internal val Str = Res.string
+
+@Composable
+internal fun StringResource.dump(): String = stringResource(this)

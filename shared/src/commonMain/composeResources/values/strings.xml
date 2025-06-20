@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">StudySmith</string>
+    <string name="tab_study">Study</string>
+    <string name="tab_buddies">Buddies</string>
+    <string name="tab_plan">Plan</string>
+    <string name="tab_stats">Stats</string>
+    <string name="tab_me">Me</string>
+    <string name="study_i_want_to_have">I want to have</string>
+    <string name="study_app_blocker_title">App Blocker</string>
+    <string name="study_app_blocker_description">Block distracting apps from being used during study.</string>
+    <string name="study_web_blocker_title">Web Blocker</string>
+    <string name="study_web_blocker_description">Block distracting websites from being accessed during study.</string>
+    <string name="study_dnd_title">Silence Notifications</string>
+    <string name="study_dnd_description">Silence pings from messages, social media, and more.</string>
+    <string name="study_im_studying_with">I'm studying with</string>
+    <string name="study_with_none">Buddy up, study together, and keep each other accountable.</string>
+</resources>
