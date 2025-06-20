@@ -31,14 +31,18 @@ class LoggedOutNode(
         data object Landing : LoggedOutNav()
 
         /**
-         * [Login] contains the login flow for existing users.
+         * [Login] contains the login flow for existing users. Note! This page simply presents
+         * options to authenticate the user specified in the [Landing] page, by their email. This
+         * might be password, OTP, etc.
          */
         data object Login : LoggedOutNav()
 
         /**
-         * [Register] contains the registration and onboarding flow for new users.
+         * [Onboarding] contains the registration and onboarding flow for new users. Flows are
+         * directed here based on whether the signed in session is new or existing. It is possible
+         * to return to [Landing] if the user wishes to abort.
          */
-        data object Register : LoggedOutNav()
+        data object Onboarding : LoggedOutNav()
     }
 
     override fun buildChildNode(
@@ -46,8 +50,8 @@ class LoggedOutNode(
         nodeContext: NodeContext,
     ): Node<*> = when (navTarget) {
         LoggedOutNav.Landing -> LandingPage(nodeContext)
-        LoggedOutNav.Login -> TODO()
-        LoggedOutNav.Register -> TODO()
+        LoggedOutNav.Login -> LoginPage(nodeContext)
+        LoggedOutNav.Onboarding -> TODO()
     }
 
     @Composable

@@ -62,6 +62,7 @@ import com.composables.icons.lucide.Users
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
+import dev.lancy.studysmith.ui.main.me.MePage
 import dev.lancy.studysmith.ui.shared.Animation
 import dev.lancy.studysmith.ui.shared.ColourScheme
 import dev.lancy.studysmith.ui.shared.Haze
@@ -142,10 +143,13 @@ class MainNode(
     override fun buildChildNode(
         navTarget: MainNav,
         nodeContext: NodeContext,
-    ): Node<*> = node(nodeContext) {
-        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(runBlocking { navTarget.icon(true) }, contentDescription = null)
-            Text(navTarget.title)
+    ): Node<*> = when (navTarget) {
+        MainNav.MePage -> MePage(nodeContext)
+        else -> node(nodeContext) {
+            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(runBlocking { navTarget.icon(true) }, contentDescription = null)
+                Text(navTarget.title)
+            }
         }
     }
 
