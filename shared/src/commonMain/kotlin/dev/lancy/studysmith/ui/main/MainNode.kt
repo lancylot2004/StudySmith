@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
 import androidx.compose.material3.TabPosition
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -38,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import com.bumble.appyx.components.spotlight.Spotlight
@@ -63,6 +63,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 import dev.lancy.studysmith.ui.main.me.MePage
+import dev.lancy.studysmith.ui.main.study.StudyPage
 import dev.lancy.studysmith.ui.shared.Animation
 import dev.lancy.studysmith.ui.shared.ColourScheme
 import dev.lancy.studysmith.ui.shared.Haze
@@ -70,12 +71,20 @@ import dev.lancy.studysmith.ui.shared.NavTarget
 import dev.lancy.studysmith.ui.shared.Padding
 import dev.lancy.studysmith.ui.shared.Rounded
 import dev.lancy.studysmith.ui.shared.Size
+import dev.lancy.studysmith.ui.shared.Str
+import dev.lancy.studysmith.ui.shared.Typography
+import dev.lancy.studysmith.ui.shared.dump
 import dev.lancy.studysmith.utilities.ScreenSize
 import dev.lancy.studysmith.utilities.animatePlacement
 import dev.lancy.studysmith.utilities.selectedIndex
 import dev.lancy.studysmith.utilities.textHeight
 import dev.lancy.studysmith.utilities.textWidth
 import kotlinx.coroutines.runBlocking
+import studysmith.shared.generated.resources.tab_buddies
+import studysmith.shared.generated.resources.tab_me
+import studysmith.shared.generated.resources.tab_plan
+import studysmith.shared.generated.resources.tab_stats
+import studysmith.shared.generated.resources.tab_study
 
 class MainNode(
     nodeContext: NodeContext,
@@ -107,33 +116,33 @@ class MainNode(
      */
     @Parcelize
     sealed class MainNav(
-        val title: String,
+        val title: @Composable () -> String,
         val icon: suspend (Boolean) -> ImageVector,
     ) : Parcelable, NavTarget {
         /**
          * Study sessions are configured, started, and managed here.
          */
-        data object StudyPage : MainNav("Study", { Lucide.Play })
+        data object StudyPage : MainNav({ Str.tab_study.dump() }, { Lucide.Play })
 
         /**
          * Friends and groups are managed here.
          */
-        data object BuddiesPage : MainNav("Buddies", { Lucide.Users })
+        data object BuddiesPage : MainNav({ Str.tab_buddies.dump() }, { Lucide.Users })
 
         /**
          * Study plans are created, edited, and viewed here.
          */
-        data object PlanPage : MainNav("Plan", { Lucide.ClipboardList })
+        data object PlanPage : MainNav({ Str.tab_plan.dump() }, { Lucide.ClipboardList })
 
         /**
          * Statistics, progress tracking, and insights are displayed here.
          */
-        data object StatsPage : MainNav("Stats", { Lucide.ChartNoAxesColumn })
+        data object StatsPage : MainNav({ Str.tab_stats.dump() }, { Lucide.ChartNoAxesColumn })
 
         /**
          * The user's profile and settings are managed here.
          */
-        data object MePage : MainNav("Me", { Lucide.CircleUser })
+        data object MePage : MainNav({ Str.tab_me.dump() }, { Lucide.CircleUser })
 
         companion object {
             val entries: List<MainNav> = listOf(StudyPage, BuddiesPage, PlanPage, StatsPage, MePage)
@@ -144,11 +153,12 @@ class MainNode(
         navTarget: MainNav,
         nodeContext: NodeContext,
     ): Node<*> = when (navTarget) {
+        MainNav.StudyPage -> StudyPage(nodeContext)
         MainNav.MePage -> MePage(nodeContext)
         else -> node(nodeContext) {
             Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(runBlocking { navTarget.icon(true) }, contentDescription = null)
-                Text(navTarget.title)
+                Text(navTarget.title())
             }
         }
     }
@@ -168,7 +178,7 @@ class MainNode(
             )
 
             TrackerBar(navExpanded, hazeState) { navExpanded = !navExpanded }
-            MainNav(navExpanded, hazeState)
+            MainNav(navExpanded, hazeState) { navExpanded = !navExpanded }
         }
     }
 
@@ -215,11 +225,58 @@ class MainNode(
                 .height(height)
                 .clip(Rounded.Large)
                 .animatePlacement()
-                .hazeChild(hazeState, shape = Rounded.Large, style = Haze.Primary)
+                .hazeChild(hazeState, shape = Rounded.Large, style = Haze.Secondary)
                 .clickable { callback() },
         ) {
-            Text("Tracker Bar")
+            Text(
+                "Start Session",
+                modifier = Modifier.align(Alignment.Center),
+                style = Typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = ColourScheme.onSecondaryContainer,
+            )
         }
+    }
+
+    @Composable
+    private fun BoxScope.MainNav(
+        expanded: Boolean,
+        hazeState: HazeState,
+        setExpanded: (Boolean) -> Unit,
+    ) {
+        val interactionSource = remember { MutableInteractionSource() }
+
+        val paddingEnd by animateDpAsState(
+            if (expanded) Padding.Medium else ScreenSize.width - Padding.Medium - NavSize.CollapsedSize,
+            animationSpec = Animation.long(),
+            label = "MainNavPaddingEnd",
+        )
+
+        TabRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = Padding.Medium, end = paddingEnd, bottom = Padding.Medium)
+                .align(Alignment.BottomStart)
+                .background(Color.Transparent)
+                .clip(Rounded.Medium)
+                .hazeChild(hazeState, shape = Rounded.Medium, style = Haze.Primary)
+                .clickable(
+                    enabled = !expanded,
+                    role = Role.Switch,
+                    interactionSource = interactionSource,
+                    indication = null,
+                ) { setExpanded(!expanded) },
+            containerColor = Color.Transparent,
+            contentColor = ColourScheme.primary,
+            selectedTabIndex = spotlight.selectedIndex(),
+            indicator = { Indicator(it, expanded, interactionSource) },
+            divider = {},
+            tabs = {
+                MainNav.entries.forEachIndexed { index, item ->
+                    IconTextNavItem(item, expanded, interactionSource)
+                }
+            },
+        )
     }
 
     @Composable
@@ -256,13 +313,14 @@ class MainNode(
                     selected = selected,
                     interactionSource = interactionSource,
                     indication = null,
+                    enabled = expanded,
                     role = Role.Tab,
                 ) { spotlight.activate(index.toFloat()) },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 imageVector = runBlocking { item.icon(selected) },
-                contentDescription = item.title,
+                contentDescription = item.title(),
                 modifier = Modifier
                     .padding(Padding.Small)
                     .size(Size.Medium),
@@ -273,7 +331,7 @@ class MainNode(
             if (!expanded) return@Column
 
             Text(
-                item.title,
+                item.title(),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier
                     .padding(
@@ -284,40 +342,6 @@ class MainNode(
                 color = colour,
             )
         }
-    }
-
-    @Composable
-    private fun BoxScope.MainNav(
-        expanded: Boolean,
-        hazeState: HazeState,
-    ) {
-        val interactionSource = remember { MutableInteractionSource() }
-
-        val paddingEnd by animateDpAsState(
-            if (expanded) Padding.Medium else ScreenSize.width - Padding.Medium - NavSize.CollapsedSize,
-            animationSpec = Animation.long(),
-            label = "MainNavPaddingEnd",
-        )
-
-        TabRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = Padding.Medium, end = paddingEnd, bottom = Padding.Medium)
-                .align(Alignment.BottomStart)
-                .background(Color.Transparent)
-                .clip(Rounded.Medium)
-                .hazeChild(hazeState, shape = Rounded.Medium, style = Haze.Primary),
-            containerColor = Color.Transparent,
-            contentColor = ColourScheme.primary,
-            selectedTabIndex = spotlight.selectedIndex(),
-            indicator = { Indicator(it, expanded, interactionSource) },
-            divider = {},
-            tabs = {
-                MainNav.entries.forEachIndexed { index, item ->
-                    IconTextNavItem(item, expanded, interactionSource)
-                }
-            },
-        )
     }
 
     @Composable
@@ -338,7 +362,7 @@ class MainNode(
             max(
                 Size.Medium,
                 textWidth(
-                    MainNav.entries[selectedIndex].title,
+                    MainNav.entries[selectedIndex].title(),
                     MaterialTheme.typography.titleSmall,
                 ),
             ) + Padding.Medium * 2,
@@ -349,7 +373,7 @@ class MainNode(
         val indHeight by animateDpAsState(
             // Text and icon height, space between, and a bit extra.
             textHeight(
-                MainNav.entries[selectedIndex].title,
+                MainNav.entries[selectedIndex].title(),
                 MaterialTheme.typography.titleSmall,
             ) + Size.Medium + Padding.Small * 1.5f,
             animationSpec = Animation.short(),
