@@ -12,7 +12,7 @@ inline fun <reified T> List<T>.oxfordJoin(
     prefix: String = "",
     suffix: String = "",
 ): String = buildString {
-    append(prefix)
+    if (isNotEmpty()) append(prefix)
     when (size) {
         0 -> append(placeholder)
         1 -> append(this@oxfordJoin.first().toString())
@@ -31,5 +31,5 @@ inline fun <reified T> List<T>.oxfordJoin(
             append(this@oxfordJoin.last())
         }
     }
-    append(suffix)
+    if (isNotEmpty()) append(suffix)
 }
