@@ -1,7 +1,7 @@
 package dev.lancy.studysmith.ui
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.bumble.appyx.components.backstack.BackStack
 import com.bumble.appyx.components.backstack.BackStackModel
@@ -17,7 +17,6 @@ import dev.lancy.studysmith.ui.loggedOut.LoggedOutNode
 import dev.lancy.studysmith.ui.main.MainNode
 import dev.lancy.studysmith.ui.shared.NavTarget
 import io.github.jan.supabase.auth.status.SessionStatus
-import kotlinx.coroutines.launch
 
 class RootNode(
     nodeContext: NodeContext,
@@ -58,9 +57,7 @@ class RootNode(
             modifier = modifier,
         )
 
-        val scope = rememberCoroutineScope()
-
-        scope.launch {
+        LaunchedEffect(Unit) {
             Client.auth.sessionStatus.collect {
                 when (it) {
                     is SessionStatus.Authenticated -> {

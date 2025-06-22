@@ -55,6 +55,7 @@ fun Modifier.animatePlacement(): Modifier = composed {
 }
 
 @Composable
+@Suppress("EmptyMethod")
 internal expect fun getScreenSize(): DpSize
 
 val ScreenSize: DpSize

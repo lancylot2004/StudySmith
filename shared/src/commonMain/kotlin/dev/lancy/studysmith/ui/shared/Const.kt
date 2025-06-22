@@ -54,9 +54,6 @@ object RoundedPercent {
 }
 
 object Haze {
-    val Dark
-        @Composable get() = HazeStyle(ColourScheme.background.copy(alpha = 0.3f), Padding.Small, 0.2f)
-
     val Primary
         @Composable get() = HazeStyle(ColourScheme.primaryContainer.copy(alpha = 0.3f), Padding.Small, 0f)
 

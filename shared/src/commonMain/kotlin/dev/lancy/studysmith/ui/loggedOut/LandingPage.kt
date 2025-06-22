@@ -68,10 +68,7 @@ class LandingPage(nodeContext: NodeContext) : LeafNode(nodeContext) {
         val scope = rememberCoroutineScope()
 
         var emailText by remember { mutableStateOf(TextFieldValue()) }
-        var emailErrored by remember { mutableStateOf(false) }
-
-        var passwordText by remember { mutableStateOf(TextFieldValue()) }
-        var passwordErrored by remember { mutableStateOf(false) }
+        var emailErred by remember { mutableStateOf(false) }
 
         Column(
             modifier = modifier
@@ -143,16 +140,13 @@ class LandingPage(nodeContext: NodeContext) : LeafNode(nodeContext) {
                         end = Padding.ExtraLarge,
                     ),
                 // Only if email and password are both valid.
-                enabled = (emailText.text.isNotBlank() && !emailErrored) &&
-                    (passwordText.text.isNotBlank() && !passwordErrored),
+                enabled = emailText.text.isNotBlank() && !emailErred,
                 shape = Rounded.Medium,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = ColourScheme.primary,
                     contentColor = ColourScheme.onPrimary,
                 ),
-            ) {
-                Text("Continue", style = Typography.titleMedium)
-            }
+            ) { Text("Continue", style = Typography.titleMedium) }
 
             Row(
                 modifier = Modifier
