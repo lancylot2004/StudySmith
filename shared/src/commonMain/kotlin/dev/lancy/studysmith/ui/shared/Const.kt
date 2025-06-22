@@ -19,6 +19,8 @@ object Padding {
     val Medium = 8.dp
 
     val Large = 16.dp
+
+    val ExtraLarge = 36.dp
 }
 
 object Size {
@@ -28,7 +30,7 @@ object Size {
 
     val Large = 48.dp
 
-    val ExtraLarge = 64.dp
+    val ExtraLarge = 56.dp
 }
 
 object Rounded {
@@ -52,9 +54,6 @@ object RoundedPercent {
 }
 
 object Haze {
-    val Dark
-        @Composable get() = HazeStyle(ColourScheme.background.copy(alpha = 0.3f), Padding.Small, 0.2f)
-
     val Primary
         @Composable get() = HazeStyle(ColourScheme.primaryContainer.copy(alpha = 0.3f), Padding.Small, 0f)
 

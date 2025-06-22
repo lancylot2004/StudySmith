@@ -62,6 +62,7 @@ import com.composables.icons.lucide.Users
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
+import dev.lancy.studysmith.ui.main.me.MePage
 import dev.lancy.studysmith.ui.main.study.StudyPage
 import dev.lancy.studysmith.ui.shared.Animation
 import dev.lancy.studysmith.ui.shared.ColourScheme
@@ -153,6 +154,7 @@ class MainNode(
         nodeContext: NodeContext,
     ): Node<*> = when (navTarget) {
         MainNav.StudyPage -> StudyPage(nodeContext)
+        MainNav.MePage -> MePage(nodeContext)
         else -> node(nodeContext) {
             Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(runBlocking { navTarget.icon(true) }, contentDescription = null)
